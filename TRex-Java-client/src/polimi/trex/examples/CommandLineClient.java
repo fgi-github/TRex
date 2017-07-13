@@ -42,9 +42,35 @@ import polimi.trex.packets.TRexPkt;
 import polimi.trex.ruleparser.TRexRuleParser;
 
 /**
- * @author Gianpaolo Cugola, Daniele Rogora
  *
  * A very basic, command line oriented, client for TRex.
+ *
+ * Simple setup config:
+ * <ol>
+ *   <li>start a TRexServer in one shell</li>
+ *   <li>use the client to inject the rules as defined in your PDF, with command <code>$ java -jar TRex-client.jar
+ *   localhost 50254 -rule trex.rules</code> and content
+ *   <pre>
+ *      Assign 2000 => Smoke, 2001 => Temp, 2100 => Fire
+ *
+ *      Define  Fire(area: string, measuredTemp: double)
+ *      From    Smoke(area=>$a) and each Temp([string]area=$a, value>45) within 300000 from Smoke
+ *      Where   area:=Smoke.area, measuredTemp:=Temp.value;
+ *   </pre>
+ *   </li>
+ *   <li>start a listening client in a dedicated shell with command
+ *    <code>$ java -jar TRex-client.jar localhost 50254 -sub 2100</code></li>
+ *   <li>inject events with commands:
+ *    <code>$ java -jar TRex-client.jar localhost 50254 -pub 2001 area toto value 50</code>
+ *    <code>$ java -jar TRex-client.jar localhost 50254 -pub 2000 area toto</code>
+ *   </li>
+ *   <li>the second event generate a pub packet on the client side.</li>
+ * </ol>
+ *
+ * Note that all subsequent calls will generate as many output events as they are temperature events above 45 for each
+ * smoke event (CEP remembers the timestamp of the event, so as many temp events in the 5min frame)
+ *
+ * @author Gianpaolo Cugola, Daniele Rogora, Fabian Gilson
  */
 public class CommandLineClient implements PacketListener {
   static String teslaRule;
@@ -58,6 +84,8 @@ public class CommandLineClient implements PacketListener {
   }
 
   private TransportManager tManager = new TransportManager(true);
+
+
   public static void main(String[] args) throws IOException {
     String serverHost = null;
     int serverPort = -1;
